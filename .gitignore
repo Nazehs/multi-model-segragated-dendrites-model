@@ -5,6 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
+Simulations/
 
 # Distribution / packaging
 .Python
@@ -124,6 +125,9 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+*.npyc
+*.npy
+*.idx*
 
 # Pyre type checker
 .pyre/

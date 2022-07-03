@@ -1,6 +1,6 @@
 from __future__ import print_function
 import numpy as np
-from LayerHidden import Layer
+from MultiLayer import Layer
 
 
 class hiddenLayer(Layer):
@@ -312,11 +312,11 @@ class hiddenLayer(Layer):
         '''
 
         if self.use_spiking_feedforward:
-            self.PSP_B_RIGHT = np.dot(f_input_left, self.kappas)
-            self.PSP_B_LEFT = np.dot(f_input_right, self.kappas)
+            self.PSP_B_RIGHT = np.dot(f_input_right, self.kappas)
+            self.PSP_B_LEFT = np.dot(f_input_left, self.kappas)
         else:
             self.PSP_B_LEFT = f_input_left
-            self.PSP_B_RIGHT = f_input_left
+            self.PSP_B_RIGHT = f_input_right
 
         self.PSP_B_hist_left[:, self.integration_counter %
                              self.integration_time] = self.PSP_B_LEFT[:, 0]
@@ -365,7 +365,6 @@ class hiddenLayer(Layer):
 
         # equation 3 - determine the rate of fire using a non-linear sigmoid function applied on the somatic
         self.lambda_C_left = self.lambda_max*self.net.sigma(self.C_LEFT)
-        # print("self.lambda_C_left)", self.lambda_C_left)
 
         self.lambda_C_hist_left[:, self.integration_counter %
                                 self.integration_time] = self.lambda_C_left[:, 0]
