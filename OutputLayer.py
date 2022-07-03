@@ -48,7 +48,6 @@ class finalLayer(Layer):
         self.record_backprop_angle = record_backprop_angle
         self.use_backprop = use_backprop
         self.kappas = kappas
-        # self.calc_E_bp = calc_E_bp
         self.k_D = k_D
         self.E_E = E_E
         self.g_D = g_D
@@ -101,7 +100,7 @@ class finalLayer(Layer):
         self.E = (self.average_lambda_C_t - self.lambda_max*self.net.sigma(self.average_C_f)
                   )*-self.k_D*self.lambda_max*self.net.deriv_sigma(self.average_C_f)
 
-        if self.use_backprop or (self.record_backprop_angle):
+        if self.use_backprop or self.record_backprop_angle:
             self.E_bp = (self.average_lambda_C_t - self.lambda_max*self.net.sigma(self.average_C_f)
                          )*-self.k_D*self.lambda_max*self.net.deriv_sigma(self.average_C_f)
 
