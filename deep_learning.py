@@ -1,11 +1,10 @@
 '''
-"Towards deep learning with segregated dendrites", arXiv:1610.00161
-by Jordan Guergiuev, Timothy P. Lillicrap, Blake A. Richards.
-     Author: Jordan Guergiuev
-     E-mail: guerguiev.j@gmail.com
-       Date: May 10, 2017
-Institution: University of Toronto Scarborough
-Copyright (C) 2017 Jordan Guerguiev
+This is a master's thesis that extended the paper of "Towards deep learning with segregated dendrites", arXiv:1610.00161
+     Author: Nazeh Abel
+     E-mail: nazeaabel@gmail.com
+       Date: May 29, 2022
+Institution: University of Wolverhampton, UK
+Copyright (C) 2022 Nazeh Abel
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -204,10 +203,6 @@ class Network:
         self.x_train, self.t_train, self.x_test, self.t_test = load_MNIST()
 
         self.x_train_input_left = self.x_train[:self.x_train.shape[0]//2, :]
-        # add_noise_to_dataset(
-        # self.x_train[:self.x_train.shape[0]//2, :]
-        # )
-        # self.x_train_input_left = self.x_train[:self.x_train.shape[0]//2, :]
         self.x_train_input_right = self.x_train[self.x_train.shape[0]//2:, :]
 
         self.n_in = self.x_train_input_left.shape[0]  # input size
@@ -281,14 +276,16 @@ class Network:
                 W_sm = (V_sm + (nu**2)*(N - N**2)*(W_avg**2)*(V_avg**2) -
                         2*N*nu*b_avg*V_avg*W_avg - (b_avg**2))/(N*(nu**2)*V_sm)
                 W_sd = np.sqrt(W_sm - W_avg**2)
-                self.W[m] = W_avg + 3.465*W_sd * \
-                    np.random.uniform(-1, 1, size=(self.n[m], N * 2))
-                self.b[m] = b_avg + 3.465*b_sd * \
-                    np.random.uniform(-1, 1, size=(self.n[m], 1))
-                self.W[m] = W_avg + 3.465*W_sd * \
-                    np.random.uniform(-1, 1, size=(self.n[m], N))
-                self.b[m] = b_avg + 3.465*b_sd * \
-                    np.random.uniform(-1, 1, size=(self.n[m], 1))
+                if self.M == 1:
+                    self.W[m] = W_avg + 3.465*W_sd * \
+                        np.random.uniform(-1, 1, size=(self.n[m], N * 2))
+                    self.b[m] = b_avg + 3.465*b_sd * \
+                        np.random.uniform(-1, 1, size=(self.n[m], 1))
+                else:
+                    self.b[m] = b_avg + 3.465*b_sd * \
+                        np.random.uniform(-1, 1, size=(self.n[m], 1))
+                    self.W[m] = W_avg + 3.465*W_sd * \
+                        np.random.uniform(-1, 1, size=(self.n[m], N))
 
                 self.W_left[m] = W_avg + 3.465*W_sd * \
                     np.random.uniform(-1, 1, size=(self.n[m], N))
@@ -300,10 +297,6 @@ class Network:
                 self.b_right[m] = b_avg + 3.465*b_sd * \
                     np.random.uniform(-1, 1, size=(self.n[m], 1))
             else:
-                self.W[m] = 0.1 * \
-                    np.random.uniform(-1, 1, size=(self.n[m], N))
-                self.b[m] = 1.0 * \
-                    np.random.uniform(-1, 1, size=(self.n[m], 1))
                 self.W_left[m] = 0.1 * \
                     np.random.uniform(-1, 1, size=(self.n[m], N))
                 self.b_left[m] = 1.0 * \
@@ -313,6 +306,17 @@ class Network:
                     np.random.uniform(-1, 1, size=(self.n[m], N))
                 self.b_right[m] = 1.0 * \
                     np.random.uniform(-1, 1, size=(self.n[m], 1))
+
+                if self.M == 1:
+                    self.W[m] = W_avg + 3.465*W_sd * \
+                        np.random.uniform(-1, 1, size=(self.n[m], N * 2))
+                    self.b[m] = b_avg + 3.465*b_sd * \
+                        np.random.uniform(-1, 1, size=(self.n[m], 1))
+                else:
+                    self.W[m] = 0.1 * \
+                        np.random.uniform(-1, 1, size=(self.n[m], N))
+                    self.b[m] = 1.0 * \
+                        np.random.uniform(-1, 1, size=(self.n[m], 1))
 
             # generate feedback weights & biases; in the paper, we do not use feedback biases
             if m != 0:
@@ -392,8 +396,10 @@ class Network:
             for m in xrange(self.M-1):
                 self.Y_dropout_indices[m] = np.random.choice(
                     len(self.Y[m].ravel()), int(0.8*len(self.Y[m].ravel())), False)
+
                 self.Y[m].ravel()[self.Y_dropout_indices[m]] = 0
                 self.Y[m] *= 5
+
                 self.Y_dropout_indices_left[m] = np.random.choice(
                     len(self.Y_left[m].ravel()), int(0.8*len(self.Y_left[m].ravel())), False)
                 self.Y_left[m].ravel()[self.Y_dropout_indices_left[m]] = 0
@@ -563,12 +569,16 @@ class Network:
         if use_spiking_feedforward:
             x_left = self.x_hist_left
             x_right = self.x_hist_right
+            if self.M == 1:
+                x = self.x_hist
         else:
             x_left = self.x_left
             x_right = self.x_right
+            if self.M == 1:
+                x = np.concatenate([x_left, x_right], axis=0)
 
         if self.M == 1:
-            self.l[0].out_f(np.concatenate([x_left, x_right], axis=0), None)
+            self.l[0].out_f(x, None)
         else:
             if use_broadcast:
                 if use_spiking_feedback:
@@ -590,7 +600,7 @@ class Network:
                                          self.l[-2].S_hist_right], axis=0), None)
                     else:
                         self.l[-1].out_f(np.sum([self.l[-2].lambda_C_left,
-                                         self.l[-2].lambda_C_left], axis=0), None)
+                                         self.l[-2].lambda_C_right], axis=0), None)
                 else:
                     # taking the left and right input
                     self.l[0].out_f(x_left, x_right, self.l[-1].lambda_C)
@@ -659,12 +669,15 @@ class Network:
         if use_spiking_feedforward:
             x_left = self.x_hist_left
             x_right = self.x_hist_right
+            if self.M == 1:
+                x = self.x_hist
         else:
             x_left = self.x_left
             x_right = self.x_right
-
+            if self.M == 1:
+                x = np.concatenate([x_left, x_right], axis=0)
         if self.M == 1:
-            self.l[0].out_t(np.concatenate([x_left, x_right], axis=0), self.t)
+            self.l[0].out_t(x, self.t)
         else:
             if use_broadcast:
                 if use_spiking_feedback:
@@ -736,13 +749,12 @@ class Network:
                     else:
                         self.l[-1].out_t(self.l[-2].lambda_C, self.t)
 
-    def f_phase(self, x_left, x_right, t, training_num, training=False):
+    def f_phase(self, x_left, x_right,  training_num, training=False):
         '''
         Perform a forward phase.
 
         Arguments:
             x (ndarray)        : Input array of size (X, 1) where X is the size of the input, eg. (784, 1).
-            t (ndarray)        : Target array of size (T, 1) where T is the size of the target, eg. (10, 1).
             training_num (int) : Number (from start of the epoch) of the training example being shown.
             training (bool)    : Whether the network is in training (True) or testing (False) mode.
         '''
@@ -758,11 +770,16 @@ class Network:
 
         for time in xrange(l_f_phase):
             # update input spike history
-            self.x_hist_left = np.concatenate(
-                [self.x_hist_left[:, 1:], np.random.poisson(x_left)], axis=-1)
 
-            self.x_hist_right = np.concatenate(
-                [self.x_hist_right[:, 1:], np.random.poisson(x_right)], axis=-1)
+            if self.M == 1:
+                self.x_hist = np.concatenate(
+                    [self.x_hist[:, 1:], np.random.poisson(np.concatenate([x_left, x_right], axis=0))], axis=-1)
+            else:
+                self.x_hist_left = np.concatenate(
+                    [self.x_hist_left[:, 1:], np.random.poisson(x_left)], axis=-1)
+
+                self.x_hist_right = np.concatenate(
+                    [self.x_hist_right[:, 1:], np.random.poisson(x_right)], axis=-1)
             # do a forward pass
             self.out_f(training=training)
 
@@ -801,9 +818,13 @@ class Network:
 
             self.J_betas.append(np.multiply(
                 lambda_max*deriv_sigma(self.l[-1].average_C_f), k_D*self.W[-1]))
-            # needs to concatenate the left and right here
-            self.J_gammas.append(np.multiply(deriv_sigma(
-                np.dot(np.sum([self.Y_left[-2], self.Y_right[-2]], axis=0), lambda_max*sigma(self.l[-1].average_C_f))), np.sum([self.Y_left[-2], self.Y_right[-2]], axis=0)))
+            if self.M == 1:
+                self.J_gammas.append(np.multiply(deriv_sigma(
+                    np.dot(self.Y[-2], lambda_max*sigma(self.l[-1].average_C_f))), self.Y[-2]))
+            else:
+                # needs to concatenate the left and right here
+                self.J_gammas.append(np.multiply(deriv_sigma(
+                    np.dot(np.sum([self.Y_left[-2], self.Y_right[-2]], axis=0), lambda_max*sigma(self.l[-1].average_C_f))), np.sum([self.Y_left[-2], self.Y_right[-2]], axis=0)))
 
         if record_voltages and training:
             # append voltages to files
@@ -816,13 +837,12 @@ class Network:
                 with open(os.path.join(self.simulation_path, 'C_hist_{}.csv'.format(m)), 'a') as C_hist_file:
                     np.savetxt(C_hist_file, self.C_hists[m])
 
-    def t_phase(self, x_left, x_right, t, training_num):
+    def t_phase(self, x_left, x_right,  training_num):
         '''
         Perform a target phase.
 
         Arguments:
             x (ndarray)        : Input array of size (X, 1) where X is the size of the input, eg. (784, 1).
-            t (ndarray)        : Target array of size (T, 1) where T is the size of the target, eg. (10, 1).
             training_num (int) : Number (from start of the epoch) of the training example being shown.
         '''
 
@@ -837,15 +857,21 @@ class Network:
 
         for time in xrange(l_t_phase):
             # update input history
-            self.x_hist_left = np.concatenate(
-                [self.x_hist_left[:, 1:], np.random.poisson(x_left)], axis=-1)
-            self.x_hist_right = np.concatenate(
-                [self.x_hist_right[:, 1:], np.random.poisson(x_right)], axis=-1)
 
+            if self.M == 1:
+                self.x_hist = np.concatenate(
+                    [self.x_hist[:, 1:], np.random.poisson(np.concatenate([x_left, x_right], axis=0))], axis=-1)
+            else:
+                self.x_hist_left = np.concatenate(
+                    [self.x_hist_left[:, 1:], np.random.poisson(x_left)], axis=-1)
+                self.x_hist_right = np.concatenate(
+                    [self.x_hist_right[:, 1:], np.random.poisson(x_right)], axis=-1)
+
+            # calculate backprop angle at the end of the target phase
+            calc_E_bp = record_backprop_angle and time == l_t_phase - 1
             # calculate backprop angle at the end of the target phase
             # do a target pass
             self.out_t()
-
             if use_rand_plateau_times:
                 # calculate plateau potentials & perform weight updates
                 for m in xrange(self.M-2, -1, -1):
@@ -884,13 +910,12 @@ class Network:
             # take note of this (the loss function equation 7) - calculated by taking the difference between the
             # average forward phase activity and the target phase on the output layer
             self.loss = ((self.l[-1].average_lambda_C_t -
-                         lambda_max*sigma(self.l[-1].average_C_f)) ** 2).mean()
+                          lambda_max*sigma(self.l[-1].average_C_f)) ** 2).mean()
 
         for m in xrange(self.M-1, -1, -1):
             # reset averages
 
             if m == self.M-1:
-                # print('%%%%%%')
                 self.l[m].average_lambda_C_f *= 0
                 self.l[m].average_lambda_C_t *= 0
                 self.l[m].average_C_f *= 0
@@ -914,6 +939,9 @@ class Network:
                 self.l[m].average_A_f_right *= 0
                 self.l[m].average_A_t_right *= 0
                 self.l[m].average_lambda_C_f_right *= 0
+
+            if self.M == 1:
+                self.x_hist *= 0
 
                 if update_feedback_weights:
                     self.l[m].average_PSP_A_f_left *= 0
@@ -1230,7 +1258,7 @@ class Network:
             # get max eigenvalues for weights
             U = np.dot(
                 self.W[-1], np.concatenate([self.Y_left[-2], self.Y_right[-2]], axis=0))
-            print(" self.M ee ",  self.M)
+
             if self.M == 1:
                 U = np.dot(
                     k_D*self.W[-1], self.Y[-2])
@@ -1295,6 +1323,8 @@ class Network:
         # initialize input spike history
         self.x_hist_left = np.zeros((self.n_in, mem))
         self.x_hist_right = np.zeros((self.n_in, mem))
+        if self.M == 1:
+            self.x_hist = np.zeros((self.n_in * 2, mem))
 
         # start time used for timing how long each 1000 examples take
         start_time = None
@@ -1374,7 +1404,7 @@ class Network:
                         np.zeros((l_f_phase, self.l[m].size)) for m in xrange(self.M)]
 
                 # do forward & target phases
-                self.f_phase(self.x_left, self.x_right, None, n, training=True)
+                self.f_phase(self.x_left, self.x_right, n, training=True)
 
                 if record_training_error:
                     sel_num = np.argmax(np.mean(
@@ -1387,9 +1417,7 @@ class Network:
                     if sel_num == target_num:
                         num_correct += 1
 
-                self.t_phase(self.x_left, self.x_right, self.t.repeat(
-                    self.n_neurons_per_category, axis=0), n)
-
+                self.t_phase(self.x_left, self.x_right, n)
                 if record_loss:
                     self.losses[k*n_training_examples + n] = self.loss
 
@@ -1448,7 +1476,6 @@ class Network:
                 if record_backprop_angle and not use_backprop:
                     # get backprop angle
                     if self.M > 1:
-                        print("%%% yoy! ", self.M)
                         bp_angle = np.arccos(np.sum(self.l[0].delta_b_bp * self.l[0].delta_b_full) / (
                             np.linalg.norm(self.l[0].delta_b_bp)*np.linalg.norm(self.l[0].delta_b_full.T)))*180.0/np.pi
                         self.bp_angles[k*n_training_examples + n] = bp_angle
@@ -1466,7 +1493,7 @@ class Network:
                     # update plots
                     if record_matrices:
                         A = np.mean(np.array([self.jacobian_prod_matrices[k*n_training_examples +
-                                    n-99:k*n_training_examples + n + 1][i] for i in max_inds][:-10]), axis=0)
+                                                                          n-99:k*n_training_examples + n + 1][i] for i in max_inds][:-10]), axis=0)
                         im_plot.set_data(A)
 
                     if record_loss:
@@ -1709,13 +1736,17 @@ class Network:
         prediction = []
         test_sample = []
         # save old integration time
+        # old_integration_time = self.integration_time
         old_integration_time = integration_time
-
+        # integration_time = integration_time_test
         # set new integration time
         integration_time = integration_time_test
+        # self.integration_time = integration_time_test
 
         old_x_hist_left = self.x_hist_left
         old_x_hist_right = self.x_hist_right
+        if self.M == 1:
+            old_x_hist = self.x_hist
 
         # initialize count of correct classifications
         num_correct = 0
@@ -1739,6 +1770,8 @@ class Network:
             # clear input spike history
             self.x_hist_left *= 0
             self.x_hist_right *= 0
+            if self.M == 1:
+                self.x_hist *= 0
 
             # get testing example data
             self.x_left = lambda_max*self.x_test_left[:, n][:, np.newaxis]
@@ -1746,8 +1779,7 @@ class Network:
             self.t = self.t_test[:, n][:, np.newaxis]
 
             # do a forward phase & get the unit with maximum average somatic potential
-            self.f_phase(self.x_left, self.x_right, self.t.repeat(
-                self.n_neurons_per_category, axis=0), None, training=False)
+            self.f_phase(self.x_left, self.x_right, None, training=False)
             sel_num = np.argmax(np.mean(
                 self.l[-1].average_C_f.reshape(-1, self.n_neurons_per_category), axis=-1))
 
@@ -1773,6 +1805,10 @@ class Network:
             self.x_hist_left = old_x_hist_left
             self.x_hist_right = old_x_hist_right
 
+        if self.M == 1 and old_x_hist is not None:
+            self.x_hist = old_x_hist
+
+        # self.integration_time = old_integration_time
         integration_time = old_integration_time
 
         l_f_phase = old_l_f_phase
@@ -2228,23 +2264,6 @@ def shuffle_arrays(*args):
     return results
 
 # --- Misc. --- #
-
-# plot the training test prediction
-
-
-def plotTestPrediction():
-    plt.figure(figsize=(10, 10))
-    plt.scatter(true_value, predicted_value, c='crimson')
-    plt.yscale('log')
-    plt.xscale('log')
-
-    p1 = max(max(predicted_value), max(true_value))
-    p2 = min(min(predicted_value), min(true_value))
-    plt.plot([p1, p2], [p1, p2], 'b-')
-    plt.xlabel('True Values', fontsize=15)
-    plt.ylabel('Predictions', fontsize=15)
-    plt.axis('equal')
-    plt.show()
 
 
 def plot_f_weights(self, normalize=False, save_path=None):
