@@ -312,8 +312,8 @@ class hiddenLayer(Layer):
         '''
 
         if self.use_spiking_feedforward:
-            self.PSP_B_RIGHT = np.dot(f_input_left, self.kappas)
-            self.PSP_B_LEFT = np.dot(f_input_right, self.kappas)
+            self.PSP_B_RIGHT = np.dot(f_input_right, self.kappas)
+            self.PSP_B_LEFT = np.dot(f_input_left, self.kappas)
         else:
             self.PSP_B_LEFT = f_input_left
             self.PSP_B_RIGHT = f_input_left

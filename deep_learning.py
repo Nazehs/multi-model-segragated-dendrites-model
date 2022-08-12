@@ -56,7 +56,7 @@ use_broadcast = True
 use_spiking_feedback = True  # use spiking feedback
 use_spiking_feedforward = True  # use spiking feedforward input
 
-use_symmetric_weights = True  # enforce symmetric weights
+use_symmetric_weights = False  # enforce symmetric weights
 noisy_symmetric_weights = False  # add noise to symmetric weights
 
 use_sparse_feedback = False  # use sparse feedback weights
